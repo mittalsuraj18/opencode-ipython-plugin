@@ -29,7 +29,7 @@ describe("Python Tool", () => {
 		expect(tool.execute).toBeFunction();
 	});
 
-	testIfPython("executes simple code", async () => {
+		testIfPython("executes simple code", async () => {
 		const result = await tool.execute(
 			{
 				cells: [{ code: "print('hello world')" }],
@@ -47,11 +47,8 @@ describe("Python Tool", () => {
 			},
 		);
 
-		expect(result).toBeObject();
-		if (typeof result === "object" && result !== null) {
-			expect(result.output).toContain("hello world");
-			expect(result.title).toBeString();
-		}
+		expect(typeof result).toBe("string");
+		expect(result).toContain("hello world");
 	});
 
 	testIfPython("executes multiple cells", async () => {
@@ -75,12 +72,10 @@ describe("Python Tool", () => {
 			},
 		);
 
-		expect(result).toBeObject();
-		if (typeof result === "object" && result !== null) {
-			expect(result.output).toContain("42");
-			expect(result.title).toContain("2");
-			expect(result.metadata).toBeObject();
-		}
+		expect(typeof result).toBe("string");
+		expect(result).toContain("42");
+		expect(result).toContain("## define");
+		expect(result).toContain("## use");
 	});
 
 	testIfPython("handles errors", async () => {
@@ -101,11 +96,7 @@ describe("Python Tool", () => {
 			},
 		);
 
-		expect(result).toBeObject();
-		if (typeof result === "object" && result !== null) {
-			expect(result.metadata).toBeObject();
-			const meta = result.metadata as Record<string, unknown>;
-			expect(meta.isError).toBeTrue();
-		}
+		expect(typeof result).toBe("string");
+		expect(result).toContain("ZeroDivisionError");
 	});
 });

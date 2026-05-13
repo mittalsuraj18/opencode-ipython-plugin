@@ -64,9 +64,10 @@ export function createPythonTool() {
 
 			// Build attachments for TUI rendering
 			const attachments = result.images.map((image, index) => ({
-				mimeType: "image/png",
-				data: image,
-				name: `figure_${index + 1}.png`,
+				type: "file" as const,
+				mime: "image/png",
+				url: `data:image/png;base64,${image}`,
+				filename: `figure_${index + 1}.png`,
 			}));
 
 			return {

@@ -8,6 +8,7 @@ import * as fs from "node:fs";
 import { createServer } from "node:net";
 import * as path from "node:path";
 import { resolveManagedPythonEnv } from "./runtime";
+import { logger } from "../util/logger";
 
 const GATEWAY_DIR_NAME = "gateway";
 const GATEWAY_INFO_FILE = "gateway.json";
@@ -165,7 +166,7 @@ async function withGatewayLock<T>(handler: () => Promise<T>): Promise<T> {
 					if (staleByPid || staleByMissingPid) {
 						await fs.promises.unlink(lockPath);
 						removedStale = true;
-						console.warn("Removed stale shared gateway lock", { path: lockPath, pid: lockPid });
+						logger.warn("Removed stale shared gateway lock", { path: lockPath, pid: lockPid });
 					}
 				} catch {
 					// Ignore stat errors; keep waiting
@@ -308,7 +309,7 @@ async function killGateway(pid: number, context: string): Promise<void> {
 			process.kill(pid, "SIGKILL");
 		}
 	} catch (err) {
-		console.warn("Failed to kill shared gateway process", {
+		logger.warn("Failed to kill shared gateway process", {
 			error: err instanceof Error ? err.message : String(err),
 			pid,
 			context,
@@ -324,11 +325,11 @@ export async function acquireSharedGateway(cwd: string): Promise<AcquireResult |
 				if (await isGatewayAlive(existingInfo)) {
 					localGatewayUrl = existingInfo.url;
 					isCoordinatorInitialized = true;
-					console.debug("Reusing global Python gateway", { url: existingInfo.url });
+					logger.debug("Reusing global Python gateway", { url: existingInfo.url });
 					return { url: existingInfo.url, isShared: true };
 				}
 
-				console.debug("Cleaning up stale gateway info", { pid: existingInfo.pid });
+				logger.debug("Cleaning up stale gateway info", { pid: existingInfo.pid });
 				if (isPidRunning(existingInfo.pid)) {
 					await killGateway(existingInfo.pid, "stale");
 				}
@@ -345,11 +346,11 @@ export async function acquireSharedGateway(cwd: string): Promise<AcquireResult |
 			};
 			await writeGatewayInfo(info);
 			isCoordinatorInitialized = true;
-			console.debug("Started global Python gateway", { url, pid });
+			logger.debug("Started global Python gateway", { url, pid });
 			return { url, isShared: true };
 		});
 	} catch (err) {
-		console.warn("Failed to acquire shared gateway", {
+		logger.warn("Failed to acquire shared gateway", {
 			error: err instanceof Error ? err.message : String(err),
 		});
 		return null;
@@ -412,7 +413,7 @@ export async function shutdownSharedGateway(): Promise<void> {
 			await clearGatewayInfo();
 		});
 	} catch (err) {
-		console.warn("Failed to shutdown shared gateway", {
+		logger.warn("Failed to shutdown shared gateway", {
 			error: err instanceof Error ? err.message : String(err),
 		});
 	} finally {

@@ -6,6 +6,7 @@
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { logger } from "../util/logger";
 
 const DEFAULT_ENV_ALLOWLIST = new Set([
 	"PATH",
@@ -252,21 +253,21 @@ export async function installManagedPackages(): Promise<void> {
 }
 
 export async function createManagedEnv(): Promise<void> {
-	console.log("Creating isolated Python environment...");
+	logger.log("Creating isolated Python environment...");
 	await fs.promises.mkdir(PLUGIN_DIR, { recursive: true });
 
 	const uv = await findUv();
 	if (uv) {
-		console.log("  Using uv for fast environment creation");
+		logger.log("  Using uv for fast environment creation");
 		await createUvEnv(MANAGED_ENV_DIR);
 	} else {
-		console.log("  Using python3 -m venv (install uv for faster setup: https://docs.astral.sh/uv/)");
+		logger.log("  Using python3 -m venv (install uv for faster setup: https://docs.astral.sh/uv/)");
 		await createVenvEnv(MANAGED_ENV_DIR);
 	}
 
-	console.log("  Installing jupyter_kernel_gateway and ipykernel...");
+	logger.log("  Installing jupyter_kernel_gateway and ipykernel...");
 	await installManagedPackages();
-	console.log("  ✓ Isolated Python environment ready");
+	logger.log("  ✓ Isolated Python environment ready");
 }
 
 export async function resolveManagedPythonEnv(): Promise<PythonRuntime> {

@@ -6,6 +6,7 @@
  */
 import { resolveManagedPythonEnv } from "./runtime";
 import { acquireSharedGateway, releaseSharedGateway, shutdownSharedGateway } from "./gateway";
+import { logger } from "../util/logger";
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();
@@ -370,14 +371,14 @@ export class PythonKernel {
 				const kernel = await PythonKernel.#startWithSharedGateway(sharedResult.url, options.cwd, options.env, startup);
 				return kernel;
 			} catch (err) {
-				console.debug("PythonKernel.start:sharedFailed");
+				logger.debug("PythonKernel.start:sharedFailed");
 				if (attempt === 0 && err instanceof SharedGatewayCreateError && err.status >= 500) {
-					console.warn("Shared gateway kernel creation failed, retrying", {
+					logger.warn("Shared gateway kernel creation failed, retrying", {
 						status: err.status,
 					});
 					continue;
 				}
-				console.warn("Failed to acquire shared gateway", {
+				logger.warn("Failed to acquire shared gateway", {
 					error: err instanceof Error ? err.message : String(err),
 				});
 				throw err;
@@ -403,7 +404,7 @@ export class PythonKernel {
 		});
 
 		if (!createResponse.ok) {
-			console.debug(`sharedGateway:fetch:notOk:${createResponse.status}`);
+			logger.debug(`sharedGateway:fetch:notOk:${createResponse.status}`);
 			await shutdownSharedGateway();
 			const text = await createResponse.text();
 			throw new SharedGatewayCreateError(
@@ -508,7 +509,7 @@ export class PythonKernel {
 			if (!msg) return;
 
 			if (TRACE_IPC) {
-				console.debug("Kernel IPC recv", { channel: msg.channel, msgType: msg.header.msg_type });
+				logger.debug("Kernel IPC recv", { channel: msg.channel, msgType: msg.header.msg_type });
 			}
 
 			const parentId = (msg.parent_header as { msg_id?: string }).msg_id;
@@ -561,7 +562,7 @@ export class PythonKernel {
 		}
 		this.#pendingExecutions.clear();
 		this.#messageHandlers.clear();
-		console.warn("Aborted pending Python executions", { reason });
+		logger.warn("Aborted pending Python executions", { reason });
 	}
 
 	isAlive(): boolean {
@@ -794,7 +795,7 @@ export class PythonKernel {
 				signal: AbortSignal.timeout(2000),
 			});
 		} catch (err: unknown) {
-			console.warn("Failed to interrupt kernel via API", { error: err instanceof Error ? err.message : String(err) });
+			logger.warn("Failed to interrupt kernel via API", { error: err instanceof Error ? err.message : String(err) });
 		}
 
 		try {
@@ -814,7 +815,7 @@ export class PythonKernel {
 			};
 			this.#sendMessage(msg);
 		} catch (err: unknown) {
-			console.warn("Failed to send interrupt request", { error: err instanceof Error ? err.message : String(err) });
+			logger.warn("Failed to send interrupt request", { error: err instanceof Error ? err.message : String(err) });
 		}
 	}
 
@@ -837,7 +838,7 @@ export class PythonKernel {
 				signal: shutdownSignal,
 			});
 		} catch (err: unknown) {
-			console.warn("Failed to delete kernel via API", { error: err instanceof Error ? err.message : String(err) });
+			logger.warn("Failed to delete kernel via API", { error: err instanceof Error ? err.message : String(err) });
 		}
 
 		if (this.#ws) {
@@ -856,7 +857,7 @@ export class PythonKernel {
 		}
 
 		if (TRACE_IPC) {
-			console.debug("Kernel IPC send", {
+			logger.debug("Kernel IPC send", {
 				channel: msg.channel,
 				msgType: msg.header.msg_type,
 				msgId: msg.header.msg_id,

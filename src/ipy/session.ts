@@ -5,6 +5,7 @@
  * heartbeat checks, and auto-restart on crash.
  */
 import { PythonKernel, type KernelExecuteOptions, type KernelExecuteResult, type PreludeHelper } from "./kernel";
+import { logger } from "../util/logger";
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_KERNEL_SESSIONS = 4;
@@ -213,12 +214,12 @@ function startHeartbeat(session: KernelSession): void {
 		if (session.dead) return;
 		if (!session.kernel.isAlive()) {
 			if (session.restartCount >= 1) {
-				console.error("Kernel session crashed twice, marking as dead", { sessionId: session.id });
+				logger.error("Kernel session crashed twice, marking as dead", { sessionId: session.id });
 				session.dead = true;
 				return;
 			}
 			session.restartCount++;
-			console.warn("Kernel session crashed, attempting restart", { sessionId: session.id, attempt: session.restartCount });
+			logger.warn("Kernel session crashed, attempting restart", { sessionId: session.id, attempt: session.restartCount });
 			try {
 				// Extract cwd from the kernel's initialization state if available
 				// For now, we'll restart without env - the caller should handle this
@@ -230,7 +231,7 @@ function startHeartbeat(session: KernelSession): void {
 				session.dead = false;
 				console.info("Kernel session restarted successfully", { sessionId: session.id });
 			} catch (err) {
-				console.error("Failed to restart kernel session", {
+				logger.error("Failed to restart kernel session", {
 					sessionId: session.id,
 					error: err instanceof Error ? err.message : String(err),
 				});
@@ -301,7 +302,7 @@ async function shutdownSession(session: KernelSession): Promise<void> {
 	try {
 		await session.kernel.shutdown({ timeoutMs: 2000 });
 	} catch (err) {
-		console.warn("Error shutting down kernel session", {
+		logger.warn("Error shutting down kernel session", {
 			sessionId: session.id,
 			error: err instanceof Error ? err.message : String(err),
 		});
@@ -324,7 +325,7 @@ function startIdleEviction(): void {
 		const now = Date.now();
 		for (const [key, session] of kernelSessions.entries()) {
 			if (now - session.lastUsedAt > IDLE_TIMEOUT_MS) {
-				console.debug("Evicting idle kernel session", { sessionId: session.id, idleMs: now - session.lastUsedAt });
+				logger.debug("Evicting idle kernel session", { sessionId: session.id, idleMs: now - session.lastUsedAt });
 				await shutdownSession(session);
 				kernelSessions.delete(key);
 			}

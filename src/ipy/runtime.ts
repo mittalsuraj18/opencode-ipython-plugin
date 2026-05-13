@@ -96,12 +96,6 @@ function normalizeEnvKey(key: string): string {
 	return CASE_INSENSITIVE_ENV ? key.toUpperCase() : key;
 }
 
-function resolvePathKey(env: Record<string, string | undefined>): string {
-	if (!CASE_INSENSITIVE_ENV) return "PATH";
-	const match = Object.keys(env).find(candidate => candidate.toLowerCase() === "path");
-	return match ?? "PATH";
-}
-
 export interface PythonRuntime {
 	/** Path to python executable */
 	pythonPath: string;
@@ -148,49 +142,13 @@ export function resolveVenvPath(cwd: string): string | undefined {
 }
 
 /**
- * Resolve the windowless Python executable (pythonw.exe) on Windows.
- * Falls back to the regular Python path if pythonw.exe is not available.
+ * @deprecated System Python fallback is no longer supported. Use resolveManagedPythonEnv() instead.
+ * This function now throws to prevent accidental system Python usage.
  */
-function resolveWindowlessPython(pythonPath: string): string {
-	if (process.platform !== "win32") return pythonPath;
-	const pythonwPath = pythonPath.replace(/python\.exe$/i, "pythonw.exe");
-	if (pythonwPath !== pythonPath && fs.existsSync(pythonwPath)) {
-		return pythonwPath;
-	}
-	return pythonPath;
-}
-
-/**
- * Resolve Python runtime including executable path, environment, and venv detection.
- */
-export function resolvePythonRuntime(cwd: string, baseEnv: Record<string, string | undefined>): PythonRuntime {
-	const env = { ...baseEnv };
-	const venvPath = env.VIRTUAL_ENV ?? resolveVenvPath(cwd);
-
-	if (venvPath) {
-		env.VIRTUAL_ENV = venvPath;
-		const binDir = process.platform === "win32" ? path.join(venvPath, "Scripts") : path.join(venvPath, "bin");
-		const pythonCandidate = path.join(binDir, process.platform === "win32" ? "python.exe" : "python");
-		if (fs.existsSync(pythonCandidate)) {
-			const pathKey = resolvePathKey(env);
-			const currentPath = env[pathKey];
-			env[pathKey] = currentPath ? `${binDir}${path.delimiter}${currentPath}` : binDir;
-			return {
-				pythonPath: resolveWindowlessPython(pythonCandidate),
-				env,
-				venvPath,
-			};
-		}
-	}
-
-	const pythonPath = Bun.which("python") ?? Bun.which("python3");
-	if (!pythonPath) {
-		throw new Error("Python executable not found on PATH");
-	}
-	return {
-		pythonPath: resolveWindowlessPython(pythonPath),
-		env,
-	};
+export function resolvePythonRuntime(_cwd: string, _baseEnv: Record<string, string | undefined>): never {
+	throw new Error(
+		"System Python fallback removed. Use resolveManagedPythonEnv() which creates an isolated environment automatically.",
+	);
 }
 
 /**
@@ -293,15 +251,7 @@ export async function installManagedPackages(): Promise<void> {
 	}
 }
 
-export async function resolveManagedPythonEnv(): Promise<PythonRuntime> {
-	if (await isValidEnv()) {
-		return {
-			pythonPath: MANAGED_PYTHON,
-			env: filterEnv(process.env as Record<string, string | undefined>),
-			venvPath: MANAGED_ENV_DIR,
-		};
-	}
-
+export async function createManagedEnv(): Promise<void> {
 	console.log("Creating isolated Python environment...");
 	await fs.promises.mkdir(PLUGIN_DIR, { recursive: true });
 
@@ -317,6 +267,18 @@ export async function resolveManagedPythonEnv(): Promise<PythonRuntime> {
 	console.log("  Installing jupyter_kernel_gateway and ipykernel...");
 	await installManagedPackages();
 	console.log("  ✓ Isolated Python environment ready");
+}
+
+export async function resolveManagedPythonEnv(): Promise<PythonRuntime> {
+	if (await isValidEnv()) {
+		return {
+			pythonPath: MANAGED_PYTHON,
+			env: filterEnv(process.env as Record<string, string | undefined>),
+			venvPath: MANAGED_ENV_DIR,
+		};
+	}
+
+	await createManagedEnv();
 
 	return {
 		pythonPath: MANAGED_PYTHON,

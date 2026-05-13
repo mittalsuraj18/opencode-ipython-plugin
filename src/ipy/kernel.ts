@@ -4,7 +4,7 @@
  * Implements the Jupyter messaging protocol over WebSocket for executing code,
  * handling rich output, and managing kernel lifecycle.
  */
-import { filterEnv, resolvePythonRuntime } from "./runtime";
+import { resolveManagedPythonEnv } from "./runtime";
 import { acquireSharedGateway, releaseSharedGateway, shutdownSharedGateway } from "./gateway";
 
 const TEXT_ENCODER = new TextEncoder();
@@ -173,26 +173,14 @@ export async function checkPythonKernelAvailability(cwd: string): Promise<Python
 	}
 
 	try {
-		const baseEnv = filterEnv(process.env as Record<string, string | undefined>);
-		const runtime = resolvePythonRuntime(cwd, baseEnv);
-		const checkScript =
-			"import importlib.util,sys;sys.exit(0 if importlib.util.find_spec('kernel_gateway') and importlib.util.find_spec('ipykernel') else 1)";
-		const proc = Bun.spawn([runtime.pythonPath, "-c", checkScript], {
-			stdout: "pipe",
-			stderr: "pipe",
-		});
-		const exitCode = await proc.exited;
-		if (exitCode === 0) {
-			return { ok: true, pythonPath: runtime.pythonPath };
-		}
+		const runtime = await resolveManagedPythonEnv();
+		return { ok: true, pythonPath: runtime.pythonPath };
+	} catch (err: unknown) {
+		const message = err instanceof Error ? err.message : String(err);
 		return {
 			ok: false,
-			pythonPath: runtime.pythonPath,
-			reason:
-				"kernel_gateway (jupyter-kernel-gateway) or ipykernel not installed. Run: python -m pip install jupyter_kernel_gateway ipykernel",
+			reason: `Failed to initialize Python environment: ${message}. Run: opencode-ipython-plugin setup --force to recreate.`,
 		};
-	} catch (err: unknown) {
-		return { ok: false, reason: err instanceof Error ? err.message : String(err) };
 	}
 }
 

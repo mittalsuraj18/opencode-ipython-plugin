@@ -2,7 +2,7 @@
  * Tests for runtime.ts - Python runtime resolution and environment filtering.
  */
 import { describe, it, expect } from "bun:test";
-import { filterEnv, resolveVenvPath, resolvePythonRuntime, checkPythonPackages, installPythonPackages } from "../src/ipy/runtime";
+import { filterEnv, resolveVenvPath, resolvePythonRuntime, resolveManagedPythonEnv, checkPythonPackages, installPythonPackages } from "../src/ipy/runtime";
 
 describe("filterEnv", () => {
 	it("preserves safe environment variables", () => {
@@ -83,23 +83,33 @@ describe("resolveVenvPath", () => {
 });
 
 describe("resolvePythonRuntime", () => {
-	it("finds system Python", () => {
-		const runtime = resolvePythonRuntime(process.cwd(), {});
+	it("throws error directing to resolveManagedPythonEnv", () => {
+		expect(() => resolvePythonRuntime(process.cwd(), {})).toThrow("System Python fallback removed. Use resolveManagedPythonEnv()");
+	});
+});
+
+describe("resolveManagedPythonEnv", () => {
+	it("returns managed environment path", async () => {
+		const runtime = await resolveManagedPythonEnv();
 		expect(runtime.pythonPath).toBeString();
 		expect(runtime.pythonPath.length).toBeGreaterThan(0);
+		expect(runtime.venvPath).toBeString();
 	});
 
-	it("includes filtered environment", () => {
+	it("includes filtered environment", async () => {
 		const env = { PATH: "/usr/bin", OPENAI_API_KEY: "secret" };
-		const runtime = resolvePythonRuntime(process.cwd(), filterEnv(env));
+		process.env.PATH = "/usr/bin";
+		process.env.OPENAI_API_KEY = "secret";
+		const runtime = await resolveManagedPythonEnv();
 		expect(runtime.env.OPENAI_API_KEY).toBeUndefined();
 		expect(runtime.env.PATH).toBeDefined();
+		delete process.env.OPENAI_API_KEY;
 	});
 });
 
 describe("checkPythonPackages", () => {
 	it("checks for kernel_gateway and ipykernel", async () => {
-		const runtime = resolvePythonRuntime(process.cwd(), {});
+		const runtime = await resolveManagedPythonEnv();
 		const result = await checkPythonPackages(runtime.pythonPath);
 		// We expect it might fail in CI where packages aren't installed
 		expect(result).toBeObject();
@@ -109,7 +119,7 @@ describe("checkPythonPackages", () => {
 
 describe("installPythonPackages", () => {
 	it("returns proper result type", async () => {
-		const runtime = resolvePythonRuntime(process.cwd(), {});
+		const runtime = await resolveManagedPythonEnv();
 		const result = await installPythonPackages(runtime.pythonPath);
 		expect(result).toBeObject();
 		expect(result.ok).toBeBoolean();

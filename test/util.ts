@@ -2,17 +2,21 @@
  * Test utilities for Python plugin tests.
  */
 import { describe, it } from "bun:test";
-import { resolvePythonRuntime, filterEnv, checkPythonPackages } from "../src/ipy/runtime";
+import { resolveManagedPythonEnv, checkPythonPackages } from "../src/ipy/runtime";
 
 let pythonAvailable: boolean | null = null;
 let pythonPath: string | null = null;
 
 export async function isPythonAvailable(): Promise<boolean> {
 	if (pythonAvailable !== null) return pythonAvailable;
-	const runtime = resolvePythonRuntime(process.cwd(), filterEnv(process.env as Record<string, string | undefined>));
-	pythonPath = runtime.pythonPath;
-	const check = await checkPythonPackages(runtime.pythonPath);
-	pythonAvailable = check.ok;
+	try {
+		const runtime = await resolveManagedPythonEnv();
+		pythonPath = runtime.pythonPath;
+		const check = await checkPythonPackages(runtime.pythonPath);
+		pythonAvailable = check.ok;
+	} catch {
+		pythonAvailable = false;
+	}
 	return pythonAvailable;
 }
 

@@ -33,8 +33,20 @@ export function createPythonTool() {
 				signal: ctx.abort,
 			});
 
-			// Format output with inline images for LLM visibility
-			let output = result.output;
+			// Build formatted output showing code and results for each cell
+			let output = "";
+			for (const cell of result.cells) {
+				const cellTitle = cell.title || `Cell ${cell.index + 1}`;
+				output += `## ${cellTitle}\n\n`;
+				output += `\`\`\`python\n${cell.code}\n\`\`\`\n\n`;
+				output += `**Output:**\n${cell.output || "(no output)"}\n\n`;
+				if (cell.status === "error") {
+					output += `**Status:** Error\n\n`;
+				}
+				output += `---\n\n`;
+			}
+
+			// Append inline images for LLM visibility
 			for (const image of result.images) {
 				output += `\n\n![image](data:image/png;base64,${image})\n`;
 			}

@@ -1,42 +1,49 @@
-# OpenCode IPython Plugin
+# opencode-ipython-plugin
 
-Execute Python code in a persistent IPython kernel with rich output support, session-scoped kernel reuse, and a comprehensive prelude library of helper functions.
+Python tool for [OpenCode](https://opencode.ai) with persistent IPython kernels, rich output support, and preloaded helper functions.
+
+## Features
+
+- **Persistent kernels** — Variables, imports, and functions survive across tool calls
+- **Session reuse** — Kernels live 5 minutes idle, max 4 sessions (LRU eviction)
+- **Multi-cell execution** — Run multiple code blocks sequentially in one call
+- **Rich output** — Text, markdown, HTML, JSON, and inline images (matplotlib)
+- **Preloaded helpers** — 50+ file/search/shell utilities auto-injected into every kernel
+- **Isolated Python** — Auto-managed virtual environment, no system Python pollution
+
+## Quick Start
+
+```bash
+npm install -g opencode-ipython-plugin
+opencode-ipython-plugin setup --both
+```
+
+The setup command auto-configures:
+- Isolated Python environment (uv or venv)
+- OpenCode plugin registration (global + project)
+- Agent prompt to prefer `python` over `bash`
 
 ## Installation
 
-### One-Time Setup (Recommended)
+### Prerequisites
 
-```bash
-# Install the plugin globally and run setup
-npm install -g opencode-ipython-plugin
-opencode-ipython-plugin setup
-
-# Or run directly without installing
-npx opencode-ipython-plugin setup
-```
-
-The setup command will:
-1. **Create an isolated Python environment** (auto-detects `uv` or falls back to `python3 -m venv`)
-2. **Install Python dependencies** (`jupyter_kernel_gateway`, `ipykernel`) into the isolated environment
-3. Register the plugin in OpenCode's global config
-4. Add agent prompts that prefer `python` over `bash`
-5. Create an auto-discovery symlink for resilience
-
-> **Zero Python setup required.** The plugin manages its own isolated Python environment at `~/.opencode-ipython-plugin/python-env/`. No system Python pollution, no PEP 668 conflicts, no manual `pip install`.
+- **Bun** >= 1.0.0 ([bun.sh](https://bun.sh))
+- **Python** >= 3.8 (for creating the isolated environment)
+- **uv** (optional, recommended for faster setup)
 
 ### Setup Options
 
 ```bash
-opencode-ipython-plugin setup --global        # Global config only (default)
+opencode-ipython-plugin setup --global        # Global config only
 opencode-ipython-plugin setup --local         # Project-level config only
-opencode-ipython-plugin setup --both          # Both global + project
-opencode-ipython-plugin setup --force         # Overwrite existing entries
+opencode-ipython-plugin setup --both          # Both (default if no flag)
+opencode-ipython-plugin setup --force         # Overwrite existing config
 opencode-ipython-plugin setup --skip-python-check  # Skip Python validation
 ```
 
 ### Manual Installation
 
-If you prefer manual setup, add to `~/.opencode/config.json`:
+Add to `~/.opencode/config.json`:
 
 ```json
 {
@@ -44,317 +51,9 @@ If you prefer manual setup, add to `~/.opencode/config.json`:
 }
 ```
 
-## Local Development (Clone & Build)
+## Usage
 
-Use the plugin directly from a local clone without publishing to npm.
-
-### Quick Start (One-Liner)
-
-```bash
-git clone https://github.com/your-org/opencode-ipython-plugin.git && \
-cd opencode-ipython-plugin && \
-bun install && \
-bun run build && \
-mkdir -p ~/.opencode/plugins && \
-ln -s "$(pwd)/dist/index.js" ~/.opencode/plugins/opencode-ipython-plugin.js && \
-echo '{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-ipython-plugin@latest"],
-  "agent": {
-    "build": {
-      "prompt": "When executing code, calculations, data processing, or scripting tasks, ALWAYS prefer the `python` tool over `bash`/`shell`. Only use `bash` for system-level operations (git, npm, docker) that genuinely require shell commands. The `python` tool provides a persistent IPython kernel with rich output support (plots, JSON, markdown) and a comprehensive prelude library of helper functions."
-    }
-  },
-  "instructions": [
-    "When executing code, calculations, data processing, or scripting tasks, ALWAYS prefer the `python` tool over `bash`/`shell`. Only use `bash` for system-level operations (git, npm, docker). The `python` tool provides a persistent IPython kernel with rich output support."
-  ]
-}' > ~/.opencode/config.json
-```
-
-> **Note:** The plugin automatically creates an isolated Python environment on first run. No manual `pip install` needed.
-
-### Manual Setup (Step by Step)
-
-**Step 1: Clone & Build**
-
-```bash
-git clone https://github.com/your-org/opencode-ipython-plugin.git
-cd opencode-ipython-plugin
-bun install
-bun run build
-```
-
-**Step 2: Choose an Integration Method**
-
-> **Python dependencies are handled automatically.** The plugin creates an isolated environment at `~/.opencode-ipython-plugin/python-env/` and installs `jupyter_kernel_gateway` + `ipykernel` on first use. No manual setup needed.
-
-| Method | Description | Config Required |
-|--------|-------------|-----------------|
-| **A: File URL** | Reference the built JS directly | Yes |
-| **B: Plugins Dir** | Symlink into `~/.opencode/plugins/` | No (auto-discovered) |
-| **C: npm Link** | Register with npm link | Yes |
-| **D: Direct Source** | Point at source directory | Yes |
-
-#### Method A: File URL Plugin Spec
-
-Add to `~/.opencode/config.json`:
-
-```json
-{
-  "plugin": ["file:///absolute/path/to/opencode-ipython-plugin/dist/index.js"]
-}
-```
-
-#### Method B: Auto-Discovery Plugins Directory
-
-```bash
-mkdir -p ~/.opencode/plugins
-ln -s "$(pwd)/dist/index.js" ~/.opencode/plugins/opencode-ipython-plugin.js
-```
-
-No config changes needed — OpenCode automatically scans `~/.opencode/plugins/*.js` on startup.
-
-#### Method C: npm Link
-
-```bash
-cd opencode-ipython-plugin
-npm link
-```
-
-Then in your OpenCode config:
-
-```json
-{
-  "plugin": ["opencode-ipython-plugin"]
-}
-```
-
-#### Method D: Direct Source Import
-
-Point at the source directory (OpenCode resolves the package):
-
-```json
-{
-  "plugin": ["file:///absolute/path/to/opencode-ipython-plugin"]
-}
-```
-
-**Step 3: Add Agent Prompt & Instructions**
-
-Add to `~/.opencode/config.json`:
-
-```json
-{
-  "agent": {
-    "build": {
-      "prompt": "When executing code, calculations, data processing, or scripting tasks, ALWAYS prefer the `python` tool over `bash`/`shell`. Only use `bash` for system-level operations (git, npm, docker) that genuinely require shell commands. The `python` tool provides a persistent IPython kernel with rich output support (plots, JSON, markdown) and a comprehensive prelude library of helper functions."
-    }
-  },
-  "instructions": [
-    "When executing code, calculations, data processing, or scripting tasks, ALWAYS prefer the `python` tool over `bash`/`shell`. Only use `bash` for system-level operations (git, npm, docker). The `python` tool provides a persistent IPython kernel with rich output support."
-  ]
-}
-```
-
-### Project-Level Setup
-
-For team sharing without npm publishing:
-
-```bash
-cd your-project
-mkdir -p .opencode/plugins
-ln -s /absolute/path/to/opencode-ipython-plugin/dist/index.js .opencode/plugins/opencode-ipython-plugin.js
-```
-
-Commit `.opencode/config.json` with the plugin spec so team members get it automatically.
-
-### Updating Your Local Clone
-
-```bash
-cd opencode-ipython-plugin
-git pull
-bun run build
-```
-
-The symlink in `~/.opencode/plugins/` remains valid since it points to `dist/index.js`, which is regenerated on build.
-
-### Troubleshooting: Local Integration
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Symlink broken after `git pull` | `dist/` was deleted or moved | Run `bun run build` to regenerate |
-| Plugin not loading from plugins dir | File not in `~/.opencode/plugins/*.js` | Check symlink exists: `ls -la ~/.opencode/plugins/` |
-| File URL not resolving | Relative path or missing `file://` prefix | Use absolute path: `file:///home/user/...` |
-| Plugin says "Python not found" | `python3` not in PATH | Install Python 3.8+ from python.org or your system package manager |
-| Isolated env creation fails | `python3 -m venv` not available | Ensure Python 3.8+ with venv module installed, or install `uv` for faster setup |
-| Changes not reflected | Old build cached | Run `bun run build` again |
-| Permission denied on plugin | File not executable | `chmod +x dist/index.js` |
-
-## Requirements
-
-- **Bun** >= 1.0.0 (runtime)
-- **Python** >= 3.8 with `jupyter_kernel_gateway` and `ipykernel`
-
-The plugin will attempt to auto-install required Python packages if they are missing:
-
-```bash
-pip install jupyter_kernel_gateway ipykernel
-```
-
-If your system uses PEP 668 (externally-managed environments), create a virtual environment first:
-
-```bash
-python3 -m venv ~/.opencode-ipython-plugin/python-env
-source ~/.opencode-ipython-plugin/python-env/bin/activate
-pip install jupyter_kernel_gateway ipykernel
-```
-
-## Features
-
-### Persistent IPython Kernels
-
-Unlike one-off Python execution, this plugin maintains persistent IPython kernels that survive across tool calls. This means:
-
-- **Variables persist** — Define `x = 42` in one call, use it in the next
-- **Imports survive** — `import pandas as pd` stays loaded
-- **Functions remain defined** — Reuse helper functions across multiple calls
-- **Stateful workflows** — Load data, process it, visualize it — all in the same kernel
-
-### Session-Scoped Kernel Reuse
-
-Kernels are managed with intelligent lifecycle policies:
-
-| Feature | Behavior |
-|---------|----------|
-| **Session key** | `sessionId + cwd` |
-| **Idle timeout** | 5 minutes of inactivity |
-| **Max sessions** | 4 kernels (LRU eviction) |
-| **Heartbeat** | Every 30 seconds |
-| **Auto-restart** | 1 attempt on crash, hard failure on 2nd |
-| **Queue** | Serial execution per session |
-
-### Multi-Cell Execution
-
-Execute multiple code cells sequentially in a single tool call:
-
-```json
-{
-  "cells": [
-    { "code": "import pandas as pd", "title": "imports" },
-    { "code": "df = pd.DataFrame({'x': [1,2,3]})", "title": "load" },
-    { "code": "print(df.shape)", "title": "inspect" }
-  ],
-  "timeout": 30,
-  "cwd": "/path/to/project"
-}
-```
-
-Cell execution stops on first error — later cells are skipped but earlier state persists.
-
-### Rich Output Support
-
-The plugin captures and renders rich Jupyter outputs:
-
-- **`text/plain`** — Standard text output
-- **`text/markdown`** — Formatted markdown
-- **`text/html`** — Rendered HTML (converted to markdown for LLM)
-- **`image/png`** — Base64 inline images (visible to LLM + TUI attachments)
-- **`application/json`** — Structured JSON metadata
-
-### Full Prelude Library
-
-A ~850-line Python helper library is automatically injected into every kernel, providing:
-
-#### File I/O
-- `read(path, offset=1, limit=None)` — Read file contents
-- `write(path, content)` — Write file (creates parents)
-- `append(path, content)` — Append to file
-
-#### File Operations
-- `rm(path, recursive=False)` — Delete file/directory
-- `mv(src, dst)` — Move/rename
-- `cp(src, dst)` — Copy file/directory
-
-#### Search
-- `find(pattern, path=".", type="file", limit=1000)` — Recursive glob with .gitignore respect
-- `grep(pattern, path, ignore_case=False, literal=False)` — Grep single file
-- `rgrep(pattern, path=".", glob_pattern="*")` — Recursive grep
-- `glob_files(pattern, path=".")` — Non-recursive glob
-
-#### Find/Replace
-- `replace(path, pattern, repl, regex=False)` — Replace in file
-- `sed(path, pattern, repl, flags=0)` — Regex replace (like `sed -i`)
-- `rsed(pattern, repl, path=".", glob_pattern="*")` — Recursive sed
-
-#### Line Operations
-- `lines(path, start, end=None)` — Extract line range
-- `delete_lines(path, start, end=None)` — Delete line range
-- `delete_matching(path, pattern, regex=True)` — Delete matching lines
-- `insert_at(path, line_num, text, after=True)` — Insert text at line
-
-#### Shell
-- `run(cmd, cwd=None, timeout=None)` — Run shell command with proper interrupt handling
-- `env(key=None, value=None)` — Get/set environment variables
-
-#### Navigation
-- `tree(path=".", max_depth=3)` — Directory tree
-- `stat(path)` — File/directory info
-
-#### Text Processing
-- `sort_lines(text, reverse=False, unique=False)` — Sort lines
-- `uniq(text, count=False)` — Remove duplicate adjacent lines
-- `counter(items, limit=None, reverse=True)` — Count occurrences
-- `cols(text, *indices, sep=None)` — Extract columns
-
-#### Batch
-- `diff(a, b)` — Unified diff between files
-
-#### Agent
-- `output(*ids, format="raw", query=None)` — Read other agent outputs by ID
-
-### Extension Modules
-
-Custom Python modules are auto-loaded into every kernel from:
-
-- `~/.opencode-ipython-plugin/modules/*.py` (user-level)
-- `<cwd>/.opencode-ipython-plugin/modules/*.py` (project-level, overrides user)
-
-## Architecture
-
-```
-Plugin
-├── Tool Surface (python.ts)
-│   ├── Zod schema validation
-│   ├── Multi-cell execution
-│   └── Image attachment generation
-├── Execution Engine (executor.ts)
-│   ├── Cell sequencing
-│   ├── Timeout/cancellation
-│   └── Output collection
-├── Session Manager (session.ts)
-│   ├── LRU kernel pool
-│   ├── Heartbeat monitoring
-│   └── Auto-restart on crash
-├── Kernel Client (kernel.ts)
-│   ├── WebSocket connection
-│   ├── Jupyter messaging protocol
-│   └── Binary message framing
-├── Gateway Coordinator (gateway.ts)
-│   ├── Shared process spawn
-│   ├── File-lock coordination
-│   └── Health checks
-├── Runtime (runtime.ts)
-│   ├── Python/venv resolution
-│   └── Environment filtering
-├── Prelude (prelude.ts + prelude.py)
-│   └── Helper library injection
-└── Module Loader (modules.ts)
-    └── Extension module discovery
-```
-
-## Usage Examples
-
-### Basic Python Execution
+### Basic Execution
 
 ```json
 {
@@ -383,20 +82,6 @@ Plugin
 }
 ```
 
-### Using Prelude Helpers
-
-```json
-{
-  "tool": "python",
-  "args": {
-    "cells": [
-      { "code": "files = find('*.ts', 'src')", "title": "find" },
-      { "code": "for f in files[:5]: print(f)", "title": "list" }
-    ]
-  }
-}
-```
-
 ### Visualization
 
 ```json
@@ -419,7 +104,7 @@ plt.show()
 }
 ```
 
-### Reset Kernel State
+### Reset Kernel
 
 ```json
 {
@@ -433,91 +118,150 @@ plt.show()
 }
 ```
 
+## Tool Schema
+
+```typescript
+{
+  cells: Array<{
+    code: string;        // Python code to execute
+    title?: string;      // Optional cell label
+  }>;
+  timeout?: number;       // Seconds (default: 300, max: 600)
+  cwd?: string;           // Working directory
+  reset?: boolean;        // Restart kernel before first cell
+}
+```
+
+## Architecture
+
+```
+┌─────────────────┐
+│   Tool Surface  │  Zod schema, execute hook
+├─────────────────┤
+│  Execution      │  Cell sequencing, timeout,
+│  Engine         │  cancellation, output collection
+├─────────────────┤
+│  Session        │  LRU pool (max 4), idle timeout
+│  Manager        │  (5min), heartbeat, auto-restart
+├─────────────────┤
+│  Kernel Client  │  WebSocket, Jupyter protocol
+│  (kernel.ts)    │  binary framing, MIME rendering
+├─────────────────┤
+│  Gateway        │  Shared jupyter_kernel_gateway
+│  Coordinator    │  process, file locks, health checks
+├─────────────────┤
+│  Runtime        │  Isolated Python env (uv/venv),
+│  (runtime.ts)   │  env filtering, auto-install
+└─────────────────┘
+```
+
+## Prelude Library
+
+An ~850-line Python helper library is auto-injected into every kernel:
+
+| Category | Functions |
+|----------|-----------|
+| **File I/O** | `read()`, `write()`, `append()` |
+| **File Ops** | `rm()`, `mv()`, `cp()` |
+| **Search** | `find()`, `grep()`, `rgrep()`, `glob_files()` |
+| **Find/Replace** | `replace()`, `sed()`, `rsed()` |
+| **Line Ops** | `lines()`, `delete_lines()`, `insert_at()` |
+| **Shell** | `run()`, `env()` |
+| **Navigation** | `tree()`, `stat()` |
+| **Text** | `sort_lines()`, `uniq()`, `counter()`, `cols()` |
+| **Diff** | `diff()` |
+| **Agent** | `output()` |
+
 ## Configuration
 
-No explicit configuration is required. The plugin auto-detects:
+### Environment Variables
 
-1. **Python executable** — Checks `VIRTUAL_ENV`, `.venv/`, `venv/`, then `PATH`
-2. **Working directory** — Uses OpenCode session directory by default
-3. **Environment** — Filters out API keys, preserves safe variables
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENCODE_PYTHON_DEBUG` | Enable debug logging to stdout | `0` (disabled) |
+| `OPENCODE_PYTHON_GATEWAY_URL` | Use external gateway (advanced) | auto-managed |
 
-## Environment Filtering
+### Isolated Environment
 
-The plugin automatically strips dangerous environment variables before passing them to the Python kernel:
+Location: `~/.opencode-ipython-plugin/python-env/`
 
-**Stripped:** `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GOOGLE_API_KEY`, etc.
+Auto-created on first use with:
+- `jupyter_kernel_gateway`
+- `ipykernel`
 
-**Preserved:** `PATH`, `HOME`, `VIRTUAL_ENV`, `PYTHONPATH`, `LANG`, `LC_*`, `XDG_*`
+No manual `pip install` required.
+
+## Development
+
+```bash
+# Clone and build
+git clone https://github.com/mittalsuraj18/opencode-ipython-plugin.git
+cd opencode-ipython-plugin
+bun install
+bun run build
+
+# Run tests
+bun test                    # Full tests (requires Python env)
+OC_PYTHON_SKIP_CHECK=1 bun test  # Unit tests only
+
+# Local setup
+bun run setup --both
+```
+
+### Project-Level Modules
+
+Custom Python modules auto-load from:
+- `~/.opencode-ipython-plugin/modules/*.py` (user-level)
+- `<cwd>/.opencode-ipython-plugin/modules/*.py` (project-level, overrides user)
+
+Created automatically by `setup --local` or `setup --both`.
 
 ## Troubleshooting
 
 ### "Python kernel unavailable"
 
-Install required packages:
-```bash
-pip install jupyter_kernel_gateway ipykernel
-```
+The plugin auto-creates an isolated environment. If it fails:
 
-### "externally-managed-environment" (PEP 668)
-
-Use a virtual environment:
 ```bash
+# Check Python is available
+python3 --version
+
+# Install uv for faster setup
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or create manually
 python3 -m venv ~/.opencode-ipython-plugin/python-env
-source ~/.opencode-ipython-plugin/python-env/bin/activate
-pip install jupyter_kernel_gateway ipykernel
+~/.opencode-ipython-plugin/python-env/bin/pip install jupyter_kernel_gateway ipykernel
 ```
 
-### Gateway process won't start
+### Gateway won't start
 
-Check the gateway logs:
 ```bash
+# Check gateway status
 cat ~/.opencode-ipython-plugin/gateway/gateway.json
-```
 
-Clear stale locks:
-```bash
+# Clear stale locks
 rm ~/.opencode-ipython-plugin/gateway/gateway.lock
 ```
 
-### Kernel crashes on start
+### Plugin not loading
 
-The session manager will auto-restart once. If it crashes again, the session is marked dead. Try:
-
-```json
-{ "cells": [...], "reset": true }
-```
-
-## Project-Level Modules
-
-When using `--local` or `--both`, the setup command creates a project directory for custom Python extensions:
-
-```
-.opencode-ipython-plugin/
-└── modules/
-    └── README.md
-```
-
-Place `.py` files in `modules/` to auto-load them into every kernel for this project. These are executed silently after the prelude on kernel startup.
-
-## Development
-
+Verify symlink exists:
 ```bash
-# Clone and install dependencies
-bun install
-
-# Build
-bun run build
-
-# Run setup locally
-bun run setup
-
-# Run tests (requires Python + jupyter_kernel_gateway + ipykernel)
-bun test
-
-# Run tests with Python skip (unit tests only)
-OC_PYTHON_SKIP_CHECK=1 bun test
+ls -la ~/.opencode/plugins/
+cat ~/.opencode/config.json | grep plugin
 ```
+
+### Known Issue: TUI Output
+
+OpenCode has a bug where custom tools show only a gear icon (⚙) in the TUI. The output is generated correctly but not rendered. See [BUG_REPORT.md](BUG_REPORT.md) for details and workarounds.
 
 ## License
 
 MIT
+
+## Links
+
+- **Repository**: https://github.com/mittalsuraj18/opencode-ipython-plugin
+- **Issues**: https://github.com/mittalsuraj18/opencode-ipython-plugin/issues
+- **OpenCode**: https://opencode.ai

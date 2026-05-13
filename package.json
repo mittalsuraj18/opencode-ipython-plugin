@@ -1,0 +1,43 @@
+{
+  "name": "opencode-ipython-plugin",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "IPython kernel integration plugin for OpenCode - execute Python code with persistent kernels, rich output, and helper prelude",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "opencode-ipython-plugin": "./dist/cli/setup.js"
+  },
+  "files": [
+    "dist",
+    "src/prelude.py"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "bun test --timeout 30000",
+    "prepublishOnly": "bun run build && bun test",
+    "setup": "node dist/cli/setup.js"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "python",
+    "ipython",
+    "jupyter",
+    "kernel"
+  ],
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.14.0",
+    "jsonc-parser": "^3.3.0",
+    "zod": "4.1.8"
+  },
+  "peerDependencies": {
+    "bun": ">=1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "latest",
+    "@types/node": "latest"
+  }
+}

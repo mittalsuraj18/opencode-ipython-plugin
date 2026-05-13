@@ -15,7 +15,7 @@ import {
 	mergeAgentPrompt,
 	mergeInstructions,
 } from "./config-io.js";
-import { checkAndInstallPythonDeps } from "./python-check.js";
+import { ensurePythonEnvironment } from "./python-check.js";
 
 export interface SetupOptions {
 	force?: boolean;
@@ -147,18 +147,18 @@ export async function runSetup(options: SetupOptions = {}): Promise<void> {
 	console.log("=".repeat(60));
 	console.log("");
 
-	// 1. Check Python dependencies
+	// 1. Ensure Python environment
 	if (!options.skipPythonCheck) {
-		const pythonCheck = await checkAndInstallPythonDeps();
+		const pythonCheck = await ensurePythonEnvironment();
 		if (!pythonCheck.ok) {
 			console.log("");
-			console.log("Setup incomplete. Please resolve Python dependencies and run again.");
+			console.log("Setup incomplete. Please resolve Python environment and run again.");
 			console.log("  Or run with --skip-python-check to bypass this step.");
 			process.exit(1);
 		}
 		console.log("");
 	} else {
-		console.log("⏭  Skipping Python dependency check (--skip-python-check)");
+		console.log("⏭  Skipping Python environment setup (--skip-python-check)");
 		console.log("");
 	}
 

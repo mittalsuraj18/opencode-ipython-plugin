@@ -7,7 +7,7 @@
 import * as fs from "node:fs";
 import { createServer } from "node:net";
 import * as path from "node:path";
-import { filterEnv, resolvePythonRuntime, checkPythonPackages, installPythonPackages } from "./runtime";
+import { resolveManagedPythonEnv } from "./runtime";
 
 const GATEWAY_DIR_NAME = "gateway";
 const GATEWAY_INFO_FILE = "gateway.json";
@@ -239,18 +239,7 @@ async function isGatewayAlive(info: GatewayInfo): Promise<boolean> {
 async function startGatewayProcess(
 	cwd: string,
 ): Promise<{ url: string; pid: number; pythonPath: string; venvPath: string | null }> {
-	const baseEnv = filterEnv(process.env as Record<string, string | undefined>);
-	const runtime = resolvePythonRuntime(cwd, baseEnv);
-
-	// Check required packages
-	const pkgCheck = await checkPythonPackages(runtime.pythonPath);
-	if (!pkgCheck.ok) {
-		console.log("Missing Python packages, attempting automatic installation...");
-		const installResult = await installPythonPackages(runtime.pythonPath);
-		if (!installResult.ok) {
-			throw new Error(`Failed to install required Python packages: ${installResult.reason}`);
-		}
-	}
+	const runtime = await resolveManagedPythonEnv();
 
 	const kernelEnv: Record<string, string | undefined> = {
 		...runtime.env,

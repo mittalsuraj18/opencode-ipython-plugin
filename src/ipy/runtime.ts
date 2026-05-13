@@ -237,3 +237,90 @@ export async function installPythonPackages(pythonPath: string): Promise<{ ok: b
 		return { ok: false, reason: err instanceof Error ? err.message : String(err) };
 	}
 }
+
+// ── Managed isolated environment ──────────────────────────────────────────
+
+const PLUGIN_DIR = path.join(process.env.HOME ?? "/tmp", ".opencode-ipython-plugin");
+const MANAGED_ENV_DIR = path.join(PLUGIN_DIR, "python-env");
+const MANAGED_PYTHON = path.join(
+	MANAGED_ENV_DIR,
+	process.platform === "win32" ? "Scripts" : "bin",
+	process.platform === "win32" ? "python.exe" : "python",
+);
+
+export function getConfigDir(): string {
+	return PLUGIN_DIR;
+}
+
+async function runCommand(cmd: string, args: string[]): Promise<void> {
+	const proc = Bun.spawn([cmd, ...args], {
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	const exitCode = await proc.exited;
+	if (exitCode !== 0) {
+		const stderr = await new Response(proc.stderr).text();
+		throw new Error(`Command failed: ${cmd} ${args.join(" ")} — ${stderr}`);
+	}
+}
+
+export async function findUv(): Promise<string | undefined> {
+	return Bun.which("uv") ?? undefined;
+}
+
+export async function isValidEnv(): Promise<boolean> {
+	if (!fs.existsSync(MANAGED_PYTHON)) return false;
+	const check = await checkPythonPackages(MANAGED_PYTHON);
+	return check.ok;
+}
+
+export async function createUvEnv(dir: string): Promise<void> {
+	await runCommand("uv", ["venv", dir, "--seed"]);
+}
+
+export async function createVenvEnv(dir: string): Promise<void> {
+	const python = Bun.which("python3") ?? Bun.which("python");
+	if (!python) throw new Error("python3 or python not found on PATH");
+	await runCommand(python, ["-m", "venv", dir]);
+}
+
+export async function installManagedPackages(): Promise<void> {
+	const uv = await findUv();
+	if (uv) {
+		await runCommand("uv", ["pip", "install", "jupyter_kernel_gateway", "ipykernel", "--python", MANAGED_PYTHON]);
+	} else {
+		await runCommand(MANAGED_PYTHON, ["-m", "pip", "install", "jupyter_kernel_gateway", "ipykernel"]);
+	}
+}
+
+export async function resolveManagedPythonEnv(): Promise<PythonRuntime> {
+	if (await isValidEnv()) {
+		return {
+			pythonPath: MANAGED_PYTHON,
+			env: filterEnv(process.env as Record<string, string | undefined>),
+			venvPath: MANAGED_ENV_DIR,
+		};
+	}
+
+	console.log("Creating isolated Python environment...");
+	await fs.promises.mkdir(PLUGIN_DIR, { recursive: true });
+
+	const uv = await findUv();
+	if (uv) {
+		console.log("  Using uv for fast environment creation");
+		await createUvEnv(MANAGED_ENV_DIR);
+	} else {
+		console.log("  Using python3 -m venv (install uv for faster setup: https://docs.astral.sh/uv/)");
+		await createVenvEnv(MANAGED_ENV_DIR);
+	}
+
+	console.log("  Installing jupyter_kernel_gateway and ipykernel...");
+	await installManagedPackages();
+	console.log("  ✓ Isolated Python environment ready");
+
+	return {
+		pythonPath: MANAGED_PYTHON,
+		env: filterEnv(process.env as Record<string, string | undefined>),
+		venvPath: MANAGED_ENV_DIR,
+	};
+}

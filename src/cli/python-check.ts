@@ -1,52 +1,29 @@
 /**
- * Python dependency checker for setup CLI.
+ * Python environment checker for setup CLI.
+ * Ensures an isolated managed Python environment exists with required packages.
  */
-import { resolvePythonRuntime, filterEnv, checkPythonPackages, installPythonPackages } from "../ipy/runtime.js";
+import { resolveManagedPythonEnv, findUv } from "../ipy/runtime.js";
 
-export async function checkAndInstallPythonDeps(): Promise<{ ok: boolean; reason?: string }> {
-	console.log("Checking Python dependencies...");
+export async function ensurePythonEnvironment(): Promise<{ ok: boolean; pythonPath: string; reason?: string }> {
+	console.log("Ensuring isolated Python environment...");
 	
 	try {
-		const runtime = resolvePythonRuntime(process.cwd(), filterEnv(process.env as Record<string, string | undefined>));
-		
-		const check = await checkPythonPackages(runtime.pythonPath);
-		if (check.ok) {
-			console.log("  ✓ jupyter_kernel_gateway and ipykernel already installed");
-			return { ok: true };
+		const uv = await findUv();
+		if (uv) {
+			console.log("  ✓ uv detected — will use for fast environment creation");
 		}
 		
-		console.log("  ⚠ Missing Python dependencies:", check.reason);
-		console.log("  Attempting auto-install...");
-		
-		const install = await installPythonPackages(runtime.pythonPath);
-		if (install.ok) {
-			console.log("  ✓ Python dependencies installed successfully");
-			return { ok: true };
-		}
-		
-		console.error("  ✗ Auto-install failed:", install.reason);
-		
-		// Check if it's a PEP 668 issue
-		if (install.reason?.includes("externally-managed-environment")) {
-			console.log("\n  Your Python is externally managed (PEP 668).");
-			console.log("  Please create a virtual environment and install manually:");
-			console.log("");
-			console.log("    python3 -m venv ~/.opencode-ipython-plugin/python-env");
-			console.log("    source ~/.opencode-ipython-plugin/python-env/bin/activate");
-			console.log("    pip install jupyter_kernel_gateway ipykernel");
-			console.log("");
-			console.log("  Then run this setup again with --skip-python-check");
-		} else {
-			console.log("\n  Please install manually:");
-			console.log("");
-			console.log("    pip install jupyter_kernel_gateway ipykernel");
-			console.log("");
-		}
-		
-		return { ok: false, reason: install.reason };
+		const runtime = await resolveManagedPythonEnv();
+		console.log(`  ✓ Using Python: ${runtime.pythonPath}`);
+		return { ok: true, pythonPath: runtime.pythonPath };
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
-		console.error("  ✗ Python check failed:", message);
-		return { ok: false, reason: message };
+		console.error("  ✗ Failed to create Python environment:", message);
+		console.log("");
+		console.log("  Please ensure one of the following is available:");
+		console.log("    • uv (https://docs.astral.sh/uv/) — fastest option");
+		console.log("    • python3 with venv module");
+		console.log("");
+		return { ok: false, pythonPath: "", reason: message };
 	}
 }

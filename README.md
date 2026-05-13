@@ -16,10 +16,13 @@ npx opencode-ipython-plugin setup
 ```
 
 The setup command will:
-1. Check and install Python dependencies (`jupyter_kernel_gateway`, `ipykernel`)
-2. Register the plugin in OpenCode's global config
-3. Add agent prompts that prefer `python` over `bash`
-4. Create an auto-discovery symlink for resilience
+1. **Create an isolated Python environment** (auto-detects `uv` or falls back to `python3 -m venv`)
+2. **Install Python dependencies** (`jupyter_kernel_gateway`, `ipykernel`) into the isolated environment
+3. Register the plugin in OpenCode's global config
+4. Add agent prompts that prefer `python` over `bash`
+5. Create an auto-discovery symlink for resilience
+
+> **Zero Python setup required.** The plugin manages its own isolated Python environment at `~/.opencode-ipython-plugin/python-env/`. No system Python pollution, no PEP 668 conflicts, no manual `pip install`.
 
 ### Setup Options
 
@@ -52,7 +55,6 @@ git clone https://github.com/your-org/opencode-ipython-plugin.git && \
 cd opencode-ipython-plugin && \
 bun install && \
 bun run build && \
-pip install jupyter_kernel_gateway ipykernel && \
 mkdir -p ~/.opencode/plugins && \
 ln -s "$(pwd)/dist/index.js" ~/.opencode/plugins/opencode-ipython-plugin.js && \
 echo '{
@@ -69,6 +71,8 @@ echo '{
 }' > ~/.opencode/config.json
 ```
 
+> **Note:** The plugin automatically creates an isolated Python environment on first run. No manual `pip install` needed.
+
 ### Manual Setup (Step by Step)
 
 **Step 1: Clone & Build**
@@ -80,21 +84,9 @@ bun install
 bun run build
 ```
 
-**Step 2: Install Python Dependencies**
+**Step 2: Choose an Integration Method**
 
-```bash
-pip install jupyter_kernel_gateway ipykernel
-```
-
-If you encounter a PEP 668 error (externally-managed environment):
-
-```bash
-python3 -m venv ~/.opencode-ipython-plugin/python-env
-source ~/.opencode-ipython-plugin/python-env/bin/activate
-pip install jupyter_kernel_gateway ipykernel
-```
-
-**Step 3: Choose an Integration Method**
+> **Python dependencies are handled automatically.** The plugin creates an isolated environment at `~/.opencode-ipython-plugin/python-env/` and installs `jupyter_kernel_gateway` + `ipykernel` on first use. No manual setup needed.
 
 | Method | Description | Config Required |
 |--------|-------------|-----------------|
@@ -147,7 +139,7 @@ Point at the source directory (OpenCode resolves the package):
 }
 ```
 
-**Step 4: Add Agent Prompt & Instructions**
+**Step 3: Add Agent Prompt & Instructions**
 
 Add to `~/.opencode/config.json`:
 
@@ -193,7 +185,8 @@ The symlink in `~/.opencode/plugins/` remains valid since it points to `dist/ind
 | Symlink broken after `git pull` | `dist/` was deleted or moved | Run `bun run build` to regenerate |
 | Plugin not loading from plugins dir | File not in `~/.opencode/plugins/*.js` | Check symlink exists: `ls -la ~/.opencode/plugins/` |
 | File URL not resolving | Relative path or missing `file://` prefix | Use absolute path: `file:///home/user/...` |
-| `pip install` fails (PEP 668) | System Python is externally managed | Use virtual environment (see Step 2) |
+| Plugin says "Python not found" | `python3` not in PATH | Install Python 3.8+ from python.org or your system package manager |
+| Isolated env creation fails | `python3 -m venv` not available | Ensure Python 3.8+ with venv module installed, or install `uv` for faster setup |
 | Changes not reflected | Old build cached | Run `bun run build` again |
 | Permission denied on plugin | File not executable | `chmod +x dist/index.js` |
 

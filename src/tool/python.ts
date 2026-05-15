@@ -12,6 +12,7 @@ export function createPythonTool() {
 	return tool({
 		description: "Execute Python code in a persistent IPython kernel with rich output support",
 		args: {
+			description: z.string().describe("Brief summary of what this code does (always provide this)"),
 			cells: z.array(
 				z.object({
 					code: z.string().describe("Python code to execute"),

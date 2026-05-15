@@ -1,6 +1,6 @@
 {
   "name": "@mittalsuraj18/opencode-ipython-plugin",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "description": "IPython kernel integration plugin for OpenCode - execute Python code with persistent kernels, rich output, and helper prelude",
   "exports": {

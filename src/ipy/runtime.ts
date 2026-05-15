@@ -6,6 +6,7 @@
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { spawn } from "node:child_process";
 import { logger } from "../util/logger.js";
 
 const DEFAULT_ENV_ALLOWLIST = new Set([
@@ -97,6 +98,25 @@ function normalizeEnvKey(key: string): string {
 	return CASE_INSENSITIVE_ENV ? key.toUpperCase() : key;
 }
 
+function spawnAsync(cmd: string, args: string[]): Promise<{ exitCode: number; stderr: string }> {
+	return new Promise((resolve) => {
+		const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"] });
+		let stderr = "";
+		child.stderr?.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+		child.on("close", (code) => resolve({ exitCode: code ?? 1, stderr }));
+	});
+}
+
+function findOnPath(name: string): string | undefined {
+	const pathEnv = process.env.PATH ?? "";
+	const ext = process.platform === "win32" ? ".exe" : "";
+	for (const dir of pathEnv.split(path.delimiter)) {
+		const candidate = path.join(dir, name + ext);
+		if (fs.existsSync(candidate)) return candidate;
+	}
+	return undefined;
+}
+
 export interface PythonRuntime {
 	/** Path to python executable */
 	pythonPath: string;
@@ -159,11 +179,7 @@ export async function checkPythonPackages(pythonPath: string): Promise<{ ok: boo
 	const checkScript =
 		"import importlib.util,sys;sys.exit(0 if importlib.util.find_spec('kernel_gateway') and importlib.util.find_spec('ipykernel') else 1)";
 	try {
-		const proc = Bun.spawn([pythonPath, "-c", checkScript], {
-			stdout: "pipe",
-			stderr: "pipe",
-		});
-		const exitCode = await proc.exited;
+		const { exitCode } = await spawnAsync(pythonPath, ["-c", checkScript]);
 		if (exitCode === 0) {
 			return { ok: true };
 		}
@@ -182,15 +198,10 @@ export async function checkPythonPackages(pythonPath: string): Promise<{ ok: boo
  */
 export async function installPythonPackages(pythonPath: string): Promise<{ ok: boolean; reason?: string }> {
 	try {
-		const proc = Bun.spawn([pythonPath, "-m", "pip", "install", "jupyter_kernel_gateway", "ipykernel"], {
-			stdout: "pipe",
-			stderr: "pipe",
-		});
-		const exitCode = await proc.exited;
+		const { exitCode, stderr } = await spawnAsync(pythonPath, ["-m", "pip", "install", "jupyter_kernel_gateway", "ipykernel"]);
 		if (exitCode === 0) {
 			return { ok: true };
 		}
-		const stderr = await new Response(proc.stderr).text();
 		return { ok: false, reason: `pip install failed: ${stderr}` };
 	} catch (err) {
 		return { ok: false, reason: err instanceof Error ? err.message : String(err) };
@@ -212,19 +223,14 @@ export function getConfigDir(): string {
 }
 
 async function runCommand(cmd: string, args: string[]): Promise<void> {
-	const proc = Bun.spawn([cmd, ...args], {
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-	const exitCode = await proc.exited;
+	const { exitCode, stderr } = await spawnAsync(cmd, args);
 	if (exitCode !== 0) {
-		const stderr = await new Response(proc.stderr).text();
 		throw new Error(`Command failed: ${cmd} ${args.join(" ")} — ${stderr}`);
 	}
 }
 
 export async function findUv(): Promise<string | undefined> {
-	return Bun.which("uv") ?? undefined;
+	return findOnPath("uv");
 }
 
 export async function isValidEnv(): Promise<boolean> {
@@ -238,7 +244,7 @@ export async function createUvEnv(dir: string): Promise<void> {
 }
 
 export async function createVenvEnv(dir: string): Promise<void> {
-	const python = Bun.which("python3") ?? Bun.which("python");
+	const python = findOnPath("python3") ?? findOnPath("python");
 	if (!python) throw new Error("python3 or python not found on PATH");
 	await runCommand(python, ["-m", "venv", dir]);
 }

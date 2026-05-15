@@ -47,7 +47,7 @@ async function listModuleCandidates(dir: string, source: PythonModuleSource): Pr
 
 async function readModuleContent(candidate: ModuleCandidate): Promise<PythonModuleEntry> {
 	try {
-		const content = await Bun.file(candidate.path).text();
+		const content = await fs.readFile(candidate.path, "utf-8");
 		return { path: candidate.path, content, source: candidate.source };
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);

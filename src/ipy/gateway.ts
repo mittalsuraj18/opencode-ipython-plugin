@@ -7,6 +7,7 @@
 import * as fs from "node:fs";
 import { createServer } from "node:net";
 import * as path from "node:path";
+import { spawn, type ChildProcess } from "node:child_process";
 import { resolveManagedPythonEnv } from "./runtime.js";
 import { logger } from "../util/logger.js";
 
@@ -40,7 +41,7 @@ interface AcquireResult {
 	isShared: boolean;
 }
 
-let localGatewayProcess: ReturnType<typeof Bun.spawn> | null = null;
+let localGatewayProcess: ChildProcess | null = null;
 let localGatewayUrl: string | null = null;
 let isCoordinatorInitialized = false;
 
@@ -84,7 +85,7 @@ function getGatewayLockPath(): string {
 async function writeLockInfo(lockPath: string): Promise<void> {
 	const payload: GatewayLockInfo = { pid: process.pid, startedAt: Date.now() };
 	try {
-		await Bun.write(lockPath, JSON.stringify(payload));
+		await fs.promises.writeFile(lockPath, JSON.stringify(payload));
 	} catch {
 		// Ignore lock write failures
 	}
@@ -92,7 +93,7 @@ async function writeLockInfo(lockPath: string): Promise<void> {
 
 async function readLockInfo(lockPath: string): Promise<GatewayLockInfo | null> {
 	try {
-		const raw = await Bun.file(lockPath).text();
+		const raw = await fs.promises.readFile(lockPath, "utf-8");
 		const parsed = JSON.parse(raw) as Partial<GatewayLockInfo>;
 		if (typeof parsed.pid === "number" && Number.isFinite(parsed.pid)) {
 			return { pid: parsed.pid, startedAt: typeof parsed.startedAt === "number" ? parsed.startedAt : 0 };
@@ -128,7 +129,7 @@ async function withGatewayLock<T>(handler: () => Promise<T>): Promise<T> {
 			let heartbeatRunning = true;
 			const heartbeat = (async () => {
 				while (heartbeatRunning) {
-					await Bun.sleep(GATEWAY_LOCK_HEARTBEAT_MS);
+					await new Promise<void>((resolve) => setTimeout(resolve, GATEWAY_LOCK_HEARTBEAT_MS));
 					if (!heartbeatRunning) break;
 					try {
 						const now = new Date();
@@ -175,7 +176,7 @@ async function withGatewayLock<T>(handler: () => Promise<T>): Promise<T> {
 					if (Date.now() - start > GATEWAY_LOCK_TIMEOUT_MS) {
 						throw new Error("Timed out waiting for shared gateway lock");
 					}
-					await Bun.sleep(GATEWAY_LOCK_RETRY_MS);
+					await new Promise<void>((resolve) => setTimeout(resolve, GATEWAY_LOCK_RETRY_MS));
 				}
 				continue;
 			}
@@ -187,7 +188,7 @@ async function withGatewayLock<T>(handler: () => Promise<T>): Promise<T> {
 async function readGatewayInfo(): Promise<GatewayInfo | null> {
 	const infoPath = getGatewayInfoPath();
 	try {
-		const content = await Bun.file(infoPath).text();
+		const content = await fs.promises.readFile(infoPath, "utf-8");
 		const parsed = JSON.parse(content) as Partial<GatewayInfo>;
 
 		if (typeof parsed.url !== "string" || typeof parsed.pid !== "number" || typeof parsed.startedAt !== "number") {
@@ -208,7 +209,7 @@ async function readGatewayInfo(): Promise<GatewayInfo | null> {
 async function writeGatewayInfo(info: GatewayInfo): Promise<void> {
 	const infoPath = getGatewayInfoPath();
 	const tempPath = `${infoPath}.tmp`;
-	await Bun.write(tempPath, JSON.stringify(info, null, 2));
+	await fs.promises.writeFile(tempPath, JSON.stringify(info, null, 2));
 	await fs.promises.rename(tempPath, infoPath);
 }
 
@@ -250,9 +251,9 @@ async function startGatewayProcess(
 	const gatewayPort = await allocatePort();
 	const gatewayUrl = `http://127.0.0.1:${gatewayPort}`;
 
-	const gatewayProcess = Bun.spawn(
+	const gatewayProcess = spawn(
+		runtime.pythonPath,
 		[
-			runtime.pythonPath,
 			"-m",
 			"kernel_gateway",
 			"--KernelGatewayApp.ip=127.0.0.1",
@@ -263,21 +264,17 @@ async function startGatewayProcess(
 		],
 		{
 			cwd,
-			stdin: "ignore",
-			stdout: "pipe",
-			stderr: "pipe",
+			stdio: ["ignore", "pipe", "pipe"],
 			windowsHide: true,
 			detached: true,
-			env: kernelEnv,
+			env: kernelEnv as Record<string, string>,
 		},
 	);
 
 	let exited = false;
-	gatewayProcess.exited
-		.catch(() => {})
-		.then(() => {
-			exited = true;
-		});
+	gatewayProcess.on("exit", () => {
+		exited = true;
+	});
 
 	const startTime = Date.now();
 	while (Date.now() - startTime < GATEWAY_STARTUP_TIMEOUT_MS) {
@@ -289,12 +286,12 @@ async function startGatewayProcess(
 			localGatewayUrl = gatewayUrl;
 			return {
 				url: gatewayUrl,
-				pid: gatewayProcess.pid,
+				pid: gatewayProcess.pid!,
 				pythonPath: runtime.pythonPath,
 				venvPath: runtime.venvPath ?? null,
 			};
 		}
-		await Bun.sleep(100);
+		await new Promise<void>((resolve) => setTimeout(resolve, 100));
 	}
 
 	gatewayProcess.kill();
@@ -304,7 +301,7 @@ async function startGatewayProcess(
 async function killGateway(pid: number, context: string): Promise<void> {
 	try {
 		process.kill(pid, "SIGTERM");
-		await Bun.sleep(1000);
+		await new Promise<void>((resolve) => setTimeout(resolve, 1000));
 		if (isPidRunning(pid)) {
 			process.kill(pid, "SIGKILL");
 		}
@@ -418,7 +415,7 @@ export async function shutdownSharedGateway(): Promise<void> {
 		});
 	} finally {
 		if (localGatewayProcess) {
-			await killGateway(localGatewayProcess.pid, "shutdown-local");
+			await killGateway(localGatewayProcess.pid!, "shutdown-local");
 		}
 		localGatewayProcess = null;
 		localGatewayUrl = null;

@@ -1,4 +1,4 @@
-# opencode-ipython-plugin
+# @mittalsuraj18/opencode-ipython-plugin
 
 Python tool for [OpenCode](https://opencode.ai) with persistent IPython kernels, rich output support, and preloaded helper functions.
 
@@ -14,8 +14,8 @@ Python tool for [OpenCode](https://opencode.ai) with persistent IPython kernels,
 ## Quick Start
 
 ```bash
-npm install -g opencode-ipython-plugin
-opencode-ipython-plugin setup --both
+npm install -g @mittalsuraj18/opencode-ipython-plugin
+npx @mittalsuraj18/opencode-ipython-plugin setup --both
 ```
 
 The setup command auto-configures:
@@ -34,11 +34,11 @@ The setup command auto-configures:
 ### Setup Options
 
 ```bash
-opencode-ipython-plugin setup --global        # Global config only
-opencode-ipython-plugin setup --local         # Project-level config only
-opencode-ipython-plugin setup --both          # Both (default if no flag)
-opencode-ipython-plugin setup --force         # Overwrite existing config
-opencode-ipython-plugin setup --skip-python-check  # Skip Python validation
+npx @mittalsuraj18/opencode-ipython-plugin setup --global        # Global config only
+npx @mittalsuraj18/opencode-ipython-plugin setup --local         # Project-level config only
+npx @mittalsuraj18/opencode-ipython-plugin setup --both          # Both (default if no flag)
+npx @mittalsuraj18/opencode-ipython-plugin setup --force         # Overwrite existing config
+npx @mittalsuraj18/opencode-ipython-plugin setup --skip-python-check  # Skip Python validation
 ```
 
 ### Manual Installation
@@ -47,7 +47,7 @@ Add to `~/.opencode/config.json`:
 
 ```json
 {
-  "plugin": ["opencode-ipython-plugin@latest"]
+  "plugin": ["@mittalsuraj18/opencode-ipython-plugin@latest"]
 }
 ```
 

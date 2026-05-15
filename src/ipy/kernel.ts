@@ -180,7 +180,7 @@ export async function checkPythonKernelAvailability(cwd: string): Promise<Python
 		const message = err instanceof Error ? err.message : String(err);
 		return {
 			ok: false,
-			reason: `Failed to initialize Python environment: ${message}. Run: opencode-ipython-plugin setup --force to recreate.`,
+			reason: `Failed to initialize Python environment: ${message}. Run: npx @mittalsuraj18/opencode-ipython-plugin setup --force to recreate.`,
 		};
 	}
 }

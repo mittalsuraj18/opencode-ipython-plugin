@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * CLI entry point for opencode-ipython-plugin setup.
+ * CLI entry point for @mittalsuraj18/opencode-ipython-plugin setup.
  *
  * Usage:
- *   npx opencode-ipython-plugin setup [options]
+ *   npx @mittalsuraj18/opencode-ipython-plugin setup [options]
  *
  * Options:
  *   --force              Overwrite existing config entries
@@ -17,7 +17,7 @@ import { runSetup } from "./setup-logic.js";
 
 function showHelp(): void {
 	console.log(`
-Usage: opencode-ipython-plugin setup [options]
+Usage: @mittalsuraj18/opencode-ipython-plugin setup [options]
 
 One-time setup to activate the IPython plugin for OpenCode.
 
@@ -30,11 +30,11 @@ Options:
   --help               Show this help message
 
 Examples:
-  opencode-ipython-plugin setup                    # Global setup
-  opencode-ipython-plugin setup --both             # Global + project
-  opencode-ipython-plugin setup --local          # Project only
-  opencode-ipython-plugin setup --force            # Overwrite existing
-  opencode-ipython-plugin setup --skip-python-check # Skip Python check
+  @mittalsuraj18/opencode-ipython-plugin setup                    # Global setup
+  @mittalsuraj18/opencode-ipython-plugin setup --both             # Global + project
+  @mittalsuraj18/opencode-ipython-plugin setup --local          # Project only
+  @mittalsuraj18/opencode-ipython-plugin setup --force            # Overwrite existing
+  @mittalsuraj18/opencode-ipython-plugin setup --skip-python-check # Skip Python check
 `);
 }
 

@@ -1,5 +1,5 @@
 /**
- * Setup logic for opencode-ipython-plugin.
+ * Setup logic for @mittalsuraj18/opencode-ipython-plugin.
  * Orchestrates config updates, auto-discovery symlink, and project directory creation.
  */
 import * as fs from "node:fs/promises";
@@ -41,8 +41,8 @@ async function setupConfig(configPath: string, force: boolean): Promise<{ change
 	const changes: string[] = [];
 
 	// 1. Merge plugin spec
-	if (mergePluginSpec(config, "opencode-ipython-plugin@latest", force)) {
-		changes.push("Added plugin: opencode-ipython-plugin@latest");
+	if (mergePluginSpec(config, "@mittalsuraj18/opencode-ipython-plugin@latest", force)) {
+		changes.push("Added plugin: @mittalsuraj18/opencode-ipython-plugin@latest");
 		console.log("  ✓ Registered plugin");
 	} else {
 		console.log("  - Plugin already registered (skipped)");
@@ -204,7 +204,7 @@ export async function runSetup(options: SetupOptions = {}): Promise<void> {
 		console.log("No changes needed — everything was already configured.");
 	}
 	console.log("");
-	console.log("The opencode-ipython-plugin is now active.");
+	console.log("The @mittalsuraj18/opencode-ipython-plugin is now active.");
 	console.log("OpenCode will prefer the `python` tool over `bash` for code execution.");
 	console.log("");
 

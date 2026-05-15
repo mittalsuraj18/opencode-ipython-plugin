@@ -8,6 +8,7 @@ let pythonAvailable: boolean | null = null;
 let pythonPath: string | null = null;
 
 export async function isPythonAvailable(): Promise<boolean> {
+	if (process.env.OC_PYTHON_SKIP_CHECK === "1") return false;
 	if (pythonAvailable !== null) return pythonAvailable;
 	try {
 		const runtime = await resolveManagedPythonEnv();

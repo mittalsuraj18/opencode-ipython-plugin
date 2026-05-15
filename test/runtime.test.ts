@@ -2,7 +2,9 @@
  * Tests for runtime.ts - Python runtime resolution and environment filtering.
  */
 import { describe, it, expect } from "bun:test";
-import { filterEnv, resolveVenvPath, resolvePythonRuntime, resolveManagedPythonEnv, checkPythonPackages, installPythonPackages } from "../src/ipy/runtime";
+import { filterEnv, resolveVenvPath, resolvePythonRuntime } from "../src/ipy/runtime";
+
+const skipPython = process.env.OC_PYTHON_SKIP_CHECK === "1";
 
 describe("filterEnv", () => {
 	it("preserves safe environment variables", () => {
@@ -90,6 +92,8 @@ describe("resolvePythonRuntime", () => {
 
 describe("resolveManagedPythonEnv", () => {
 	it("returns managed environment path", async () => {
+		if (skipPython) return;
+		const { resolveManagedPythonEnv } = await import("../src/ipy/runtime");
 		const runtime = await resolveManagedPythonEnv();
 		expect(runtime.pythonPath).toBeString();
 		expect(runtime.pythonPath.length).toBeGreaterThan(0);
@@ -97,6 +101,8 @@ describe("resolveManagedPythonEnv", () => {
 	});
 
 	it("includes filtered environment", async () => {
+		if (skipPython) return;
+		const { resolveManagedPythonEnv } = await import("../src/ipy/runtime");
 		const env = { PATH: "/usr/bin", OPENAI_API_KEY: "secret" };
 		process.env.PATH = "/usr/bin";
 		process.env.OPENAI_API_KEY = "secret";
@@ -109,9 +115,10 @@ describe("resolveManagedPythonEnv", () => {
 
 describe("checkPythonPackages", () => {
 	it("checks for kernel_gateway and ipykernel", async () => {
+		if (skipPython) return;
+		const { resolveManagedPythonEnv, checkPythonPackages } = await import("../src/ipy/runtime");
 		const runtime = await resolveManagedPythonEnv();
 		const result = await checkPythonPackages(runtime.pythonPath);
-		// We expect it might fail in CI where packages aren't installed
 		expect(result).toBeObject();
 		expect(result.ok).toBeBoolean();
 	});
@@ -119,6 +126,8 @@ describe("checkPythonPackages", () => {
 
 describe("installPythonPackages", () => {
 	it("returns proper result type", async () => {
+		if (skipPython) return;
+		const { resolveManagedPythonEnv, installPythonPackages } = await import("../src/ipy/runtime");
 		const runtime = await resolveManagedPythonEnv();
 		const result = await installPythonPackages(runtime.pythonPath);
 		expect(result).toBeObject();

@@ -12,6 +12,7 @@ export function createPythonTool() {
 	return tool({
 		description: "Execute Python code in a persistent IPython kernel with rich output support",
 		args: {
+			description: z.string().describe("Brief summary of what this code does (always provide this)"),
 			cells: z.array(
 				z.object({
 					code: z.string().describe("Python code to execute"),
@@ -51,45 +52,38 @@ export function createPythonTool() {
 				output += `\n\n![image](data:image/png;base64,${image})\n`;
 			}
 
-			// Build metadata
-			const metadata: Record<string, unknown> = {
-				cells: result.cells.map(c => ({
-					index: c.index,
-					title: c.title,
-					status: c.status,
-					durationMs: c.durationMs,
-					exitCode: c.exitCode,
-				})),
-				cancelled: result.cancelled,
-				timedOut: result.timedOut,
-				stdinRequested: result.stdinRequested,
-				isError: result.isError,
-			};
+		// Build metadata
+		const metadata: Record<string, unknown> = {
+			cells: result.cells.map(c => ({
+				index: c.index,
+				title: c.title,
+				status: c.status,
+				durationMs: c.durationMs,
+				exitCode: c.exitCode,
+			})),
+			cancelled: result.cancelled,
+			timedOut: result.timedOut,
+			stdinRequested: result.stdinRequested,
+			isError: result.isError,
+		};
 
-			if (result.jsonOutputs.length > 0) {
-				metadata.jsonOutputs = result.jsonOutputs;
-			}
+		if (result.jsonOutputs.length > 0) {
+			metadata.jsonOutputs = result.jsonOutputs;
+		}
 
-			if (result.statusEvents.length > 0) {
-				metadata.statusEvents = result.statusEvents;
-			}
+		if (result.statusEvents.length > 0) {
+			metadata.statusEvents = result.statusEvents;
+		}
 
-			// Build attachments for TUI rendering
-			const attachments = result.images.map((image, index) => ({
-				type: "file" as const,
-				mime: "image/png",
-				url: `data:image/png;base64,${image}`,
-				filename: `figure_${index + 1}.png`,
-			}));
+		// Report metadata to OpenCode via ctx.metadata() for TUI rendering
+		ctx.metadata({
+			title: result.cells.length > 1
+				? `Executed ${result.cells.length} Python cells`
+				: "Executed Python code",
+			metadata,
+		});
 
-			return {
-				title: result.cells.length > 1
-					? `Executed ${result.cells.length} Python cells`
-					: "Executed Python code",
-				output,
-				metadata,
-				attachments: attachments.length > 0 ? attachments : undefined,
-			};
+		return output;
 		},
 	});
 }

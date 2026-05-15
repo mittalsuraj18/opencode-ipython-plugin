@@ -15,7 +15,13 @@ Python tool for [OpenCode](https://opencode.ai) with persistent IPython kernels,
 
 ```bash
 npm install -g @mittalsuraj18/opencode-ipython-plugin
-npx @mittalsuraj18/opencode-ipython-plugin setup --both
+opencode-ipython-plugin setup --both
+```
+
+Or run without installing:
+
+```bash
+npx --package=@mittalsuraj18/opencode-ipython-plugin opencode-ipython-plugin setup --both
 ```
 
 The setup command auto-configures:
@@ -27,18 +33,24 @@ The setup command auto-configures:
 
 ### Prerequisites
 
-- **Bun** >= 1.0.0 ([bun.sh](https://bun.sh))
+- **Bun** >= 1.0.0 or **Node** >= 18 ([bun.sh](https://bun.sh))
 - **Python** >= 3.8 (for creating the isolated environment)
 - **uv** (optional, recommended for faster setup)
 
 ### Setup Options
 
 ```bash
-npx @mittalsuraj18/opencode-ipython-plugin setup --global        # Global config only
-npx @mittalsuraj18/opencode-ipython-plugin setup --local         # Project-level config only
-npx @mittalsuraj18/opencode-ipython-plugin setup --both          # Both (default if no flag)
-npx @mittalsuraj18/opencode-ipython-plugin setup --force         # Overwrite existing config
-npx @mittalsuraj18/opencode-ipython-plugin setup --skip-python-check  # Skip Python validation
+opencode-ipython-plugin setup --global        # Global config only
+opencode-ipython-plugin setup --local         # Project-level config only
+opencode-ipython-plugin setup --both          # Both (default if no flag)
+opencode-ipython-plugin setup --force         # Overwrite existing config
+opencode-ipython-plugin setup --skip-python-check  # Skip Python validation
+```
+
+Or without a global install:
+
+```bash
+npx --package=@mittalsuraj18/opencode-ipython-plugin opencode-ipython-plugin setup --both
 ```
 
 ### Manual Installation
@@ -254,7 +266,7 @@ cat ~/.opencode/config.json | grep plugin
 
 ### Known Issue: TUI Output
 
-OpenCode has a bug where custom tools show only a gear icon (⚙) in the TUI. The output is generated correctly but not rendered. See [BUG_REPORT.md](BUG_REPORT.md) for details and workarounds.
+The Python tool uses a required `description` field so OpenCode's GenericTool renderer shows a meaningful subtitle. Some TUI views may still show limited info for custom tools — this is an opencode rendering limitation, not a plugin bug.
 
 ## License
 

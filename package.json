@@ -7,7 +7,7 @@
     ".": "./dist/index.js"
   },
   "bin": {
-    "@mittalsuraj18/opencode-ipython-plugin": "./dist/cli/setup.js"
+    "opencode-ipython-plugin": "./dist/cli/setup.js"
   },
   "files": [
     "dist",

@@ -13,7 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "noUnusedParameters": false,
-    "lib": ["ES2022", "DOM"]
+    "lib": ["ES2024", "DOM"],
+    "types": ["bun", "node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

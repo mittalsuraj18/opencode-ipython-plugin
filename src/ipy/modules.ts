@@ -5,7 +5,7 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { type KernelExecuteResult } from "./kernel";
+import { type KernelExecuteResult } from "./kernel.js";
 
 const PLUGIN_DIR = path.join(process.env.HOME ?? "/tmp", ".opencode-ipython-plugin");
 

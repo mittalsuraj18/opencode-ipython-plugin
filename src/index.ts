@@ -9,7 +9,7 @@
  * - Auto-installation of required Python packages
  */
 import { Plugin } from "@opencode-ai/plugin";
-import { createPythonTool } from "./tool/python";
+import { createPythonTool } from "./tool/python.js";
 
 const plugin: Plugin = async (input) => {
 	const pythonTool = createPythonTool();

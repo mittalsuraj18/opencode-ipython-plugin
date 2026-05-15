@@ -4,8 +4,8 @@
  * Manages persistent Python kernels with LRU eviction, idle timeout,
  * heartbeat checks, and auto-restart on crash.
  */
-import { PythonKernel, type KernelExecuteOptions, type KernelExecuteResult, type PreludeHelper } from "./kernel";
-import { logger } from "../util/logger";
+import { PythonKernel, type KernelExecuteOptions, type KernelExecuteResult, type PreludeHelper } from "./kernel.js";
+import { logger } from "../util/logger.js";
 
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_KERNEL_SESSIONS = 4;
@@ -52,7 +52,7 @@ export interface PythonResult {
 	/** Number of bytes included in the output text */
 	outputBytes: number;
 	/** Rich display outputs captured from display_data/execute_result */
-	displayOutputs: import("./kernel").KernelDisplayOutput[];
+	displayOutputs: import("./kernel.js").KernelDisplayOutput[];
 	/** Whether stdin was requested */
 	stdinRequested: boolean;
 }
@@ -376,7 +376,7 @@ export async function executePython(
 	}
 
 	let output = "";
-	const displayOutputs: import("./kernel").KernelDisplayOutput[] = [];
+	const displayOutputs: import("./kernel.js").KernelDisplayOutput[] = [];
 	let stdinRequested = false;
 	let cancelled = false;
 	let timedOut = false;

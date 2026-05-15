@@ -6,7 +6,7 @@
  */
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { logger } from "../util/logger";
+import { logger } from "../util/logger.js";
 
 const DEFAULT_ENV_ALLOWLIST = new Set([
 	"PATH",

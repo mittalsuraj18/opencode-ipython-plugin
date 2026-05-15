@@ -4,8 +4,8 @@
  * Executes multiple code cells sequentially in a persistent kernel session,
  * with proper error handling, timeout management, and output collection.
  */
-import { executePython, getPreludeDocs } from "./session";
-import type { PreludeHelper } from "./kernel";
+import { executePython, getPreludeDocs } from "./session.js";
+import type { PreludeHelper } from "./kernel.js";
 
 export interface CellParams {
 	code: string;
@@ -30,7 +30,7 @@ export interface CellResult {
 	status: "pending" | "running" | "complete" | "error";
 	durationMs?: number;
 	exitCode?: number;
-	statusEvents?: import("./kernel").PythonStatusEvent[];
+	statusEvents?: import("./kernel.js").PythonStatusEvent[];
 	hasMarkdown?: boolean;
 }
 
@@ -42,7 +42,7 @@ export interface ExecutionResult {
 	stdinRequested: boolean;
 	images: string[]; // base64 png images
 	jsonOutputs: unknown[];
-	statusEvents: import("./kernel").PythonStatusEvent[];
+	statusEvents: import("./kernel.js").PythonStatusEvent[];
 	isError: boolean;
 	meta?: {
 		truncated?: boolean;
@@ -78,7 +78,7 @@ export async function executeCells(options: ExecutorOptions): Promise<ExecutionR
 	let stdinRequested = false;
 	const images: string[] = [];
 	const jsonOutputs: unknown[] = [];
-	const allStatusEvents: import("./kernel").PythonStatusEvent[] = [];
+	const allStatusEvents: import("./kernel.js").PythonStatusEvent[] = [];
 	let isError = false;
 
 	for (let i = 0; i < options.cells.length; i++) {
@@ -105,7 +105,7 @@ export async function executeCells(options: ExecutorOptions): Promise<ExecutionR
 
 		const cellStart = Date.now();
 		try {
-			const cellStatusEvents: import("./kernel").PythonStatusEvent[] = [];
+			const cellStatusEvents: import("./kernel.js").PythonStatusEvent[] = [];
 			const result = await executePython(cell.code, {
 				sessionId: options.sessionId,
 				cwd: options.cwd,

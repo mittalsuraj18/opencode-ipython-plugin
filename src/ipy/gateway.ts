@@ -7,8 +7,8 @@
 import * as fs from "node:fs";
 import { createServer } from "node:net";
 import * as path from "node:path";
-import { resolveManagedPythonEnv } from "./runtime";
-import { logger } from "../util/logger";
+import { resolveManagedPythonEnv } from "./runtime.js";
+import { logger } from "../util/logger.js";
 
 const GATEWAY_DIR_NAME = "gateway";
 const GATEWAY_INFO_FILE = "gateway.json";

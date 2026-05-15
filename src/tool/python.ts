@@ -6,7 +6,7 @@
  */
 import { z } from "zod";
 import { tool } from "@opencode-ai/plugin";
-import { executeCells } from "../ipy/executor";
+import { executeCells } from "../ipy/executor.js";
 
 export function createPythonTool() {
 	return tool({

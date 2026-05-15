@@ -4,9 +4,9 @@
  * Implements the Jupyter messaging protocol over WebSocket for executing code,
  * handling rich output, and managing kernel lifecycle.
  */
-import { resolveManagedPythonEnv } from "./runtime";
-import { acquireSharedGateway, releaseSharedGateway, shutdownSharedGateway } from "./gateway";
-import { logger } from "../util/logger";
+import { resolveManagedPythonEnv } from "./runtime.js";
+import { acquireSharedGateway, releaseSharedGateway, shutdownSharedGateway } from "./gateway.js";
+import { logger } from "../util/logger.js";
 
 const TEXT_ENCODER = new TextEncoder();
 const TEXT_DECODER = new TextDecoder();

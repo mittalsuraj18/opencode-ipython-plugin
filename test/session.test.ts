@@ -73,7 +73,8 @@ describe("Session Manager", () => {
 	testIfPython("handles timeout", async () => {
 		const result = await executePython("import time; time.sleep(10)", {
 			cwd,
-			deadlineMs: Date.now() + 500,
+			sessionId: "timeout-test",
+			timeoutMs: 2000,
 		});
 
 		expect(result.cancelled).toBeTrue();
